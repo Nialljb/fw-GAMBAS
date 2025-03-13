@@ -4,20 +4,19 @@ from options.base_options import BaseOptions  # BaseOptions is defined elsewhere
 from utils.parser import parse_config
 
 class TestOptions(BaseOptions):
+    def __init__(self, which_model, config):
+        super().__init__()  # Initialize parent class
+        self.which_model = which_model  # Store which_model as an instance variable
+        self.config = config
+
     def initialize(self, parser):
         # Initialize parser from BaseOptions
         parser = BaseOptions.initialize(self, parser)
-
-        # Initialize Flywheel context and configuration
-        context = flywheel.GearContext()
-        config = context.config
-        output_label, which_model = parse_config(context)
         
         # Determine GPU setting based on model
-        gpu_index = '0' if which_model == 'GAMBAS' else '-1'
-        gpu_setting = 'gpu' if which_model == 'GAMBAS' else 'cpu'
-        netG = 'i2i_mamba' if which_model == 'GAMBAS' else 'res_cnn'
-
+        gpu_index = '0' if self.which_model == 'GAMBAS' else '-1'
+        gpu_setting = 'gpu' if self.which_model == 'GAMBAS' else 'cpu'
+        netG = 'i2i_mamba' if self.which_model == 'GAMBAS' else 'res_cnn'
 
         # Update gpu_ids argument in base options
         parser.set_defaults(gpu_ids=gpu_index)
@@ -39,10 +38,10 @@ class TestOptions(BaseOptions):
         parser.add_argument("--result_sr", type=str, default=str(Path(parser.get_default("output_dir")) / output_label), help="Path to save the result NIfTI file")
         
         # Parse additional configuration arguments
-        parser.add_argument("--phase", type=str, default=config.get("phase", "test"), help="Test phase")
-        parser.add_argument("--which_epoch", type=str, default=config.get("which_epoch", "latest"), help="Epoch to load")
-        parser.add_argument("--stride_inplane", type=int, default=int(config.get("stride_inplane", 32)), help="Stride size in 2D plane")
-        parser.add_argument("--stride_layer", type=int, default=int(config.get("stride_layer", 32)), help="Stride size in Z direction")
+        parser.add_argument("--phase", type=str, default=self.config.get("phase", "test"), help="Test phase")
+        parser.add_argument("--which_epoch", type=str, default=self.config.get("which_epoch", "latest"), help="Epoch to load")
+        parser.add_argument("--stride_inplane", type=int, default=int(self.config.get("stride_inplane", 32)), help="Stride size in 2D plane")
+        parser.add_argument("--stride_layer", type=int, default=int(self.config.get("stride_layer", 32)), help="Stride size in Z direction")
         
 
         parser.set_defaults(model='test')

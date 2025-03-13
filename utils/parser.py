@@ -4,9 +4,12 @@ from typing import Tuple
 import os
 import re
 from flywheel_gear_toolkit import GearToolkitContext
-
+import json
 import os
 import subprocess
+from string import ascii_lowercase as alc
+
+from utils.bids import import_dicom_folder, setup_bids_directories
 
 def check_gpu():
     """Check if the container has access to a GPU."""
@@ -28,11 +31,11 @@ def parse_config(context):
     """Parse the config and other options from the context, both gear and app options.
 
     Returns:
-        gear_inputs
-        gear_options: options for the gear
-        app_options: options to pass to the app
+        file output label
+        model name
     """
 
+    # Check if the container has access to a GPU
     is_gpu = check_gpu()
     if is_gpu:
         print("Running on GPU")
@@ -41,68 +44,258 @@ def parse_config(context):
         print("Running on CPU")
         model = 'ResCNN'
     
+    base_dir = '/flywheel/v0'
+    input_dir = base_dir + '/input/'
+    work_dir = base_dir + '/work/'
+    output_dir = base_dir + '/output/'
     # Get the input file id
     input_container = context.client.get_analysis(context.destination["id"])
-
-    # Get the subject id from the session id
-    # & extract the subject container
-    subject_id = input_container.parents['subject']
-    subject_container = context.client.get(subject_id)
-    subject = subject_container.reload()
-    print("subject label: ", subject.label)
-    subject_label = subject.label
-
-    # Get the session id from the input file id
-    # & extract the session container
-    session_id = input_container.parents['session']
-    session_container = context.client.get(session_id)
-    session = session_container.reload()
-    session_label = session.label
-    session_label = session_label.replace(" ", "_")
-    print("session label: ", session.label)
-
-    # Specify the directory you want to list files from
-    directory_path = '/flywheel/v0/input/input'
-
-    # Define relevant keywords to keep
-    allowed_keywords = ["T2w", "T1w", "T2", "T1", "AXI", "SAG", "COR", "Fast"]
-
-    # Define diagnostic-related terms to remove
-    diagnostic_terms = ["DIAGNOSTIC", "NOT_FOR_DIAGNOSTIC_USE", "NOTDIAGNOSTIC"]
-
-    for filename in os.listdir(directory_path):
-        if os.path.isfile(os.path.join(directory_path, filename)):
-            filename_without_extension = filename.rsplit('.', 1)[0]  # Remove file extension
-            
-            # Remove diagnostic-related terms (case insensitive)
-            for term in diagnostic_terms:
-                filename_without_extension = re.sub(term, '', filename_without_extension, flags=re.IGNORECASE)
-
-            # Replace non-alphanumeric characters with underscores (preserve letters/numbers)
-            cleaned_string = re.sub(r'[^a-zA-Z0-9]', '_', filename_without_extension)
-            
-            # Remove trailing underscores
-            cleaned_string = cleaned_string.rstrip('_')
-
-            # Extract relevant keywords
-            extracted_keywords = [word for word in allowed_keywords if word in cleaned_string]
-
-            # Ensure "T1" and "T2" are converted to "T1w" and "T2w"
-            formatted_keywords = [
-                "T1w" if word == "T1" else "T2w" if word == "T2" else word
-                for word in extracted_keywords
-            ]
-
-            # Construct the final input label
-            if formatted_keywords:
-                input_label = "_".join(formatted_keywords)
-            else:
-                # Fallback: remove leading numbers and underscores
-                input_label = re.sub(r'^\d+_?', '', cleaned_string)
-
-            print("Input label:", input_label)
-
-            output_label = f'sub-{subject_label}_ses-{session_label}_acq-{input_label}_rec-{model}.nii.gz'
-            print("Output filename:", output_label)
     
-    return output_label, model
+    input_id = input_container.parent.id
+    container = context.client.get(input_id)
+    # print(f"Container type: {container.container_type}")
+
+
+
+    # Read config.json file
+    with open(base_dir + '/config.json') as f:
+        config = json.load(f)
+
+    # Read manifest.json file
+    with open(base_dir + '/manifest.json') as f:
+        manifest = json.load(f)
+    
+    inputs = config['inputs']
+    
+    config = config['config']
+    config['input_dir'] = input_dir
+    config['work_dir'] = work_dir
+    config['output_dir'] = output_dir
+    config['bids_config_file'] = base_dir + '/utils/dcm2bids_config.json'
+    
+    return container, config, manifest, model
+
+    # # Get the subject id from the session id
+    # # & extract the subject container
+    # subject_id = input_container.parents['subject']
+    # subject_container = context.client.get(subject_id)
+    # subject = subject_container.reload()
+    # print("subject label: ", subject.label)
+    # subject_label = subject.label
+
+    # # Get the session id from the input file id
+    # # & extract the session container
+    # session_id = input_container.parents['session']
+    # session_container = context.client.get(session_id)
+    # session = session_container.reload()
+    # session_label = session.label
+    # session_label = session_label.replace(" ", "_")
+    # print("session label: ", session.label)
+
+    # # Specify the directory you want to list files from
+    # directory_path = '/flywheel/v0/input/input'
+
+    # # Define relevant keywords to keep
+    # allowed_keywords = ["T2w", "T1w", "T2", "T1", "AXI", "SAG", "COR", "Fast"]
+
+    # # Define diagnostic-related terms to remove
+    # diagnostic_terms = ["DIAGNOSTIC", "NOT_FOR_DIAGNOSTIC_USE", "NOTDIAGNOSTIC"]
+
+    # for filename in os.listdir(directory_path):
+    #     if os.path.isfile(os.path.join(directory_path, filename)):
+    #         filename_without_extension = filename.rsplit('.', 1)[0]  # Remove file extension
+            
+    #         # Remove diagnostic-related terms (case insensitive)
+    #         for term in diagnostic_terms:
+    #             filename_without_extension = re.sub(term, '', filename_without_extension, flags=re.IGNORECASE)
+
+    #         # Replace non-alphanumeric characters with underscores (preserve letters/numbers)
+    #         cleaned_string = re.sub(r'[^a-zA-Z0-9]', '_', filename_without_extension)
+            
+    #         # Remove trailing underscores
+    #         cleaned_string = cleaned_string.rstrip('_')
+
+    #         # Extract relevant keywords
+    #         extracted_keywords = [word for word in allowed_keywords if word in cleaned_string]
+
+    #         # Ensure "T1" and "T2" are converted to "T1w" and "T2w"
+    #         formatted_keywords = [
+    #             "T1w" if word == "T1" else "T2w" if word == "T2" else word
+    #             for word in extracted_keywords
+    #         ]
+
+    #         # Construct the final input label
+    #         if formatted_keywords:
+    #             input_label = "_".join(formatted_keywords)
+    #         else:
+    #             # Fallback: remove leading numbers and underscores
+    #             input_label = re.sub(r'^\d+_?', '', cleaned_string)
+
+    #         print("Input label:", input_label)
+
+    #         output_label = f'sub-{subject_label}_ses-{session_label}_acq-{input_label}_rec-{model}.nii.gz'
+    #         print("Output filename:", output_label)
+    
+    # return output_label, model
+
+
+def download_dataset(gear_context: GearToolkitContext, container, config):
+    
+    work_dir = config['work_dir']
+    source_data_dir = os.path.join(work_dir, 'sourcedata')
+    os.makedirs(source_data_dir, exist_ok=True)
+    
+    setup_bids_directories(work_dir)
+    import_options = {'config': config['bids_config_file'], 'projdir': work_dir, 'skip_dcm2niix': True}
+
+    print(f"Downloading {container.label}...")
+    print(f"Container type: {container.container_type}" )
+
+    if container.container_type == 'project':
+        proj_label, subjects = download_project(container, source_data_dir, dry_run=False)
+        print(f"Downlaoded project data, moving on to making BIDS structure...")
+
+        output = {}
+        for sub in subjects.keys():
+            output[sub] = {}
+            sessions = subjects[sub]
+
+            for ses in sessions.keys():
+                print(f"Importing {sub} {ses}...")
+                import_dicom_folder(dicom_dir=subjects[sub][ses]['folder'], sub_name=sub, ses_name=ses, **import_options)
+                output[sub][ses] = subjects[sub][ses]['id']
+
+        return output
+
+    elif container.container_type == 'subject':
+        proj_label = gear_context.client.get(container.parents.project).label
+        source_data_dir = os.path.join(source_data_dir, proj_label)
+        
+        sub_label, sessions = download_subject(container, source_data_dir, dry_run=False)
+        
+        output = {sub_label:{}}
+
+        for ses in sessions.keys():
+            import_dicom_folder(dicom_dir=sessions[ses]['folder'], sub_name=sub_label, ses_name=ses, **import_options)
+            output[sub_label][ses] = sessions[ses]['id']
+        
+        return output
+
+    elif container.container_type == 'session':
+        proj_label = gear_context.client.get(container.parents.project).label
+        sub_label = make_subject_label(gear_context.client.get(container.parents.subject))
+        source_data_dir = os.path.join(source_data_dir, proj_label, sub_label)
+        
+        ses_label, ses_dir, ses_id = download_session(container, source_data_dir, dry_run=False)
+
+        import_dicom_folder(dicom_dir=ses_dir, sub_name=sub_label, ses_name=ses_label, **import_options)
+
+        return {sub_label: {ses_label: ses_id}}
+
+
+def make_session_label(ses) -> str:
+    return ses.label.split()[0].replace("-",'')
+
+# Forcing BIDS compliance by removing spaces and dashes in subject labels
+def make_subject_label(sub) -> str:
+    return sub.label.replace("-", '').replace(" ", '') #'P'+sub.label.split('-')[1]
+
+
+def download_file(file, my_dir, dry_run=False) -> str:
+    do_download = False
+
+    # Convert file name to lowercase for case-insensitive checks
+    file_name_lower = file.name.lower()
+
+    # Check for required substrings and exclusions
+    if file['type'] in ['source code', 'nifti']:
+        if 'T2' in file.name and ('axi' in file_name_lower or 'AXI' in file.name):
+            if not any(excluded in file_name_lower for excluded in ['diagnostic', 'mapping', 'align', 'brain']):
+                do_download = True
+    
+    if do_download:
+        download_dir = my_dir
+        os.makedirs(download_dir, exist_ok=True)
+        
+        try:
+            if dry_run:
+                print(f"[DRY RUN] Would have downloaded: {file.name}")
+            else:
+                fpath = os.path.join(download_dir, file.name)
+                if not os.path.exists(fpath):
+                    file.download(fpath)
+                else:
+                    print("File already downloaded")
+
+        except Exception as e:
+            print(f"Error downloading {file.name}: {e}")
+
+        print(f"Downloaded file: {file.name}")
+
+    else:
+        print(f"Skipping file: {file.name}")
+
+    return file.name
+
+
+def download_session(ses_container, sub_dir, dry_run=False) -> Tuple[str, str]:
+    print("--- Downloading subject ---")
+    print(f"Session label: {ses_container.label}")
+    print(f"Sessions: {len(ses_container.acquisitions())}")
+
+    ses_label = make_session_label(ses_container)
+    ses_dir = os.path.join(sub_dir, ses_label)
+    ses_id = ses_container.id
+    print(f"Saving data into: {ses_dir}")
+
+    for acq in ses_container.acquisitions.iter():
+        for file in acq.files:
+            download_file(file, ses_dir, dry_run=dry_run)
+
+    return ses_label, ses_dir, ses_id
+
+
+def download_subject(sub_container, proj_dir, dry_run=False):
+    print("--- Downloading subject ---")
+    print(f"Label: {sub_container.label}")
+    print(f"Sessions: {len(sub_container.sessions())}")
+    
+    sub_label = make_subject_label(sub_container)
+    sub_dir = os.path.join(proj_dir, sub_label)
+    print(f"Saving data into: {sub_dir}")
+    
+    sessions_out = {}
+
+    for ses in sub_container.sessions.iter():
+        ses_label0, ses_dir, ses_id = download_session(ses, sub_dir, dry_run=dry_run)
+
+        # Check for duplicate session labels
+        ses_label = ses_label0; i = 0
+        
+        while ses_label in sessions_out:
+            ses_label = ses_label0 + alc[i]
+            i += 1
+        
+
+        sessions_out[ses_label] = {'folder':ses_dir, 'id':ses_id}
+
+    return sub_label, sessions_out
+
+
+def download_project(project, my_dir, dry_run=False):
+    print("--- Downloading project ---")
+    print(f"Label: {project.label}")
+    print(f"Subjects: {project.stats.number_of.subjects}")
+    print(f"Sessions: {project.stats.number_of.sessions}")
+    print(f"Acquisitions: {project.stats.number_of.acquisitions}")
+    
+    proj_name = project.label
+    my_dir = os.path.join(my_dir, proj_name)
+    print(f"Saving data into: {my_dir}")
+    
+    subjects_out = {}
+    for sub in project.subjects.iter():
+        sub_lab, sessions_dict = download_subject(sub, my_dir, dry_run=dry_run)
+        subjects_out[sub_lab] = sessions_dict
+
+    return proj_name, subjects_out
