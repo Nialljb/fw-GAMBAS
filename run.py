@@ -33,22 +33,32 @@ log = logging.getLogger(__name__)
 
 
 def main(context: GearToolkitContext) -> None:
-    # """Parses config and runs."""
+    """
+    Steps in main:
+    1. Parse the config and other options from the context, both gear and app options.
+    2. Download the dataset.
+    3. Initialize BIDS layout.
+    4. Process each subject and create a new analysis container for each.
+    5. Upload the output files to the analysis container.
+    """
 
-    print('Parsing config')
+    print('Step 1: Parsing config')
     # Initialize Flywheel context and configuration
     context = flywheel.GearContext()
     config = context.config
     input_container, config, manifest, which_model = parse_config(context)
     
     # Download the dataset 
+    print('Step 2: Downloading dataset')
     subses = download_dataset(context, input_container, config)
     print(f"subses: {subses}")
 
     # Initialize BIDS layout
+    print('Step 3: Initializing BIDS layout')
     layout = bids.BIDSLayout(root=f'{config["work_dir"]}/rawdata', derivatives=f'{config["work_dir"]}/derivatives')
     
     # Process each subject and create a new analysis container for each
+    print('Step 4: Processing each subject')
     for sub in subses.keys():
             for ses in subses[sub].keys():
                 raw_fnames, deriv_fnames = fw_process_subject(layout, sub, ses, which_model, config)
@@ -128,9 +138,12 @@ def fw_process_subject(layout, sub, ses, which_model, config):
         layout (Layout): The BIDS Layout object.
         sub (str): The subject ID.
         ses (str): The session ID.
+        which_model (str): The model to use.
+        config (dict): The configuration dictionary.
 
     Returns:
-        None
+        list: The list of raw filenames.
+        list: The list of derivative filenames.
     """
 
     print('Parsing input files')
