@@ -205,7 +205,7 @@ def download_subject(sub_container, proj_dir, dry_run=False):
     
     sub_label = make_subject_label(sub_container)
     sub_dir = os.path.join(proj_dir, sub_label)
-    print(f"Saving data into: {sub_dir}")
+    # print(f"Saving data into: {sub_dir}")
     
     sessions_out = {}
 
@@ -234,7 +234,7 @@ def download_project(project, my_dir, dry_run=False):
     
     proj_name = make_project_label(project.label)
     my_dir = os.path.join(my_dir, proj_name)
-    print(f"Saving data into: {my_dir}")
+    # print(f"Saving data into: {my_dir}")
     
     subjects_out = {}
     for sub in project.subjects.iter():
