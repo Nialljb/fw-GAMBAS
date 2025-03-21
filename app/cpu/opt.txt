@@ -24,13 +24,13 @@
                       ngf: 64                            
                no_dropout: True                          
                      norm: instance                      
-               output_dir: /flywheel/v0/work/derivatives/sub-{self.sub}/ses-{self.ses}/anat
+               output_dir: /flywheel/v0/work/derivatives/sub-DEMO001/ses-20230609/anat
                 output_nc: 1                             
                patch_size: [128, 128, 128]               
                     phase: test                          
                 reference: /flywheel/v0/app/TemplateKhula.nii
                  resample: False                         
-                result_sr: /flywheel/v0/work/derivatives/sub-{self.sub}/ses-{self.ses}/anat/sub-DEMO001_ses-20230609_rec-axi_T2w_ResCNN.nii.gz
+                result_sr: /flywheel/v0/work/derivatives/sub-DEMO001/ses-20230609/anat/sub-DEMO001_ses-20230609_rec-axi_T2w_ResCNN.nii.gz
            stride_inplane: 32                            
              stride_layer: 32                            
                    suffix:                               

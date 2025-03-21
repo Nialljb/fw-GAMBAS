@@ -63,13 +63,15 @@ class TestOptions(BaseOptions):
         parser.set_defaults(netG=netG)
 
         in_dir = Path(f"/flywheel/v0/work/rawdata/sub-{self.sub}/ses-{self.ses}/anat")
+        output_path = Path(f"/flywheel/v0/work/derivatives/sub-{self.sub}/ses-{self.ses}/anat")
+        output_path.mkdir(parents=True, exist_ok=True)
 
         m = self.which_model
         output_label = get_gambas_basename(in_dir, m)
 
         # Define default input and output directories
         parser.add_argument("--input_dir", type=str, default=in_dir, help="Path to input directory")
-        parser.add_argument("--output_dir", type=str, default="/flywheel/v0/work/derivatives/sub-{self.sub}/ses-{self.ses}/anat", help="Path to output directory")
+        parser.add_argument("--output_dir", type=str, default=output_path, help="Path to output directory")
 
         # Find the first available NIfTI file in input directory
         input_files = list(Path(parser.get_default("input_dir")).glob("*.nii.gz"))

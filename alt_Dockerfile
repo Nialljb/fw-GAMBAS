@@ -1,0 +1,48 @@
+FROM nialljb/cuda-base:latest
+
+# Setup environment
+ENV HOME=/root/
+ENV FLYWHEEL=/flywheel/v0
+WORKDIR $FLYWHEEL
+RUN mkdir -p $FLYWHEEL/input
+
+# Install common build dependencies
+RUN apt-get update && apt-get install -y \
+    curl tar unzip git cmake build-essential g++ \
+    && rm -rf /var/lib/apt/lists/*
+
+# Detect architecture and install appropriate ANTs version
+ARG ARCH_OVERRIDE
+RUN arch=$(uname -m) && echo "Detected architecture: $arch" && \
+    if [ "$arch" = "x86_64" ] || [ "$ARCH_OVERRIDE" = "x86_64" ]; then \
+        echo "Installing prebuilt AVX ANTs 2.5.4..." && \
+        curl -fsSL https://github.com/ANTsX/ANTs/releases/download/v2.5.4/ants-2.5.4-almalinux8-X64-gcc.zip -o /tmp/ants.zip && \
+        unzip /tmp/ants.zip -d /opt/ && \
+        rm /tmp/ants.zip && \
+        ln -s /opt/ants-2.5.4/bin/* /usr/local/bin/; \
+    else \
+        echo "Building AVX-safe ANTs from source..." && \
+        git clone https://github.com/ANTsX/ANTs.git /opt/ANTs && \
+        mkdir -p /opt/ANTs/build && cd /opt/ANTs/build && \
+        cmake -DCMAKE_BUILD_TYPE=Release -DUSE_VTK=OFF -DCMAKE_CXX_FLAGS="-march=x86-64" .. && \
+        make -j$(nproc) && \
+        ln -s /opt/ANTs/build/bin/* /usr/local/bin/; \
+    fi
+
+# Install Python dependencies
+RUN pip install --no-cache-dir --upgrade pip setuptools wheel packaging
+RUN pip install --no-cache-dir torch==2.2.2 torchvision==0.17.2
+
+# Copy and install requirements
+COPY requirements.txt .
+RUN pip install --no-cache-dir -r requirements.txt
+
+# Copy app code into container
+COPY ./ $FLYWHEEL/
+
+# Ensure scripts are executable
+RUN chmod +rx $FLYWHEEL/run.py && \
+    chmod +rx $FLYWHEEL/app/
+
+# Entry point
+ENTRYPOINT ["python", "/flywheel/v0/run.py"]
