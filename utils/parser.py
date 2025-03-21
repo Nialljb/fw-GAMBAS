@@ -139,6 +139,8 @@ def make_session_label(ses) -> str:
 def make_subject_label(sub) -> str:
     return sub.label.replace("-", '').replace(" ", '') #'P'+sub.label.split('-')[1]
 
+def make_project_label(proj) -> str:
+    return proj.replace("-", '_').replace(" ", '')
 
 def download_file(file, my_dir, dry_run=False) -> str:
     do_download = False
@@ -149,7 +151,7 @@ def download_file(file, my_dir, dry_run=False) -> str:
     # Check for required substrings and exclusions
     if file['type'] in ['source code', 'nifti']:
         if 'T2' in file.name and ('axi' in file_name_lower or 'AXI' in file.name):
-            if not any(excluded in file_name_lower for excluded in ['diagnostic', 'mapping', 'align', 'brain']):
+            if not any(excluded in file_name_lower for excluded in ['mapping', 'align', 'brain']): # 'diagnostic', 
                 do_download = True
     
     if do_download:
@@ -178,9 +180,9 @@ def download_file(file, my_dir, dry_run=False) -> str:
 
 
 def download_session(ses_container, sub_dir, dry_run=False) -> Tuple[str, str]:
-    print("--- Downloading subject ---")
+    print("--- Downloading session ---")
     print(f"Session label: {ses_container.label}")
-    print(f"Sessions: {len(ses_container.acquisitions())}")
+    print(f"Acquisitions: {len(ses_container.acquisitions())}")
 
     ses_label = make_session_label(ses_container)
     ses_dir = os.path.join(sub_dir, ses_label)
@@ -188,7 +190,9 @@ def download_session(ses_container, sub_dir, dry_run=False) -> Tuple[str, str]:
     print(f"Saving data into: {ses_dir}")
 
     for acq in ses_container.acquisitions.iter():
+        # print(f"Acquisition: {acq.label}")
         for file in acq.files:
+            # print(f"File: {file.name}")
             download_file(file, ses_dir, dry_run=dry_run)
 
     return ses_label, ses_dir, ses_id
@@ -228,7 +232,7 @@ def download_project(project, my_dir, dry_run=False):
     print(f"Sessions: {project.stats.number_of.sessions}")
     print(f"Acquisitions: {project.stats.number_of.acquisitions}")
     
-    proj_name = project.label
+    proj_name = make_project_label(project.label)
     my_dir = os.path.join(my_dir, proj_name)
     print(f"Saving data into: {my_dir}")
     

@@ -6,10 +6,10 @@
              dataset_mode: single                        
                drop_ratio: 0                             
                   gpu_ids: -1                            
-                    image: /flywheel/v0/work/rawdata/sub-DEMO001/ses-20230609/anat/sub-DEMO001_ses-20230609_rec-axi_T2w.nii.gz
+                    image: /flywheel/v0/work/rawdata/sub-1370042/ses-20250225/anat/sub-1370042_ses-20250225_rec-axi_T2w.nii.gz
                 init_gain: 0.02                          
                 init_type: normal                        
-                input_dir: /flywheel/v0/work/rawdata/sub-DEMO001/ses-20230609/anat
+                input_dir: /flywheel/v0/work/rawdata/sub-1370042/ses-20250225/anat
                  input_nc: 1                             
                   isTrain: False                         	[default: None]
                 min_pixel: 0.1                           
@@ -24,13 +24,13 @@
                       ngf: 64                            
                no_dropout: True                          
                      norm: instance                      
-               output_dir: /flywheel/v0/work/derivatives/sub-DEMO001/ses-20230609/anat
+               output_dir: /flywheel/v0/work/derivatives/sub-1370042/ses-20250225/anat
                 output_nc: 1                             
                patch_size: [128, 128, 128]               
                     phase: test                          
                 reference: /flywheel/v0/app/TemplateKhula.nii
                  resample: False                         
-                result_sr: /flywheel/v0/work/derivatives/sub-DEMO001/ses-20230609/anat/sub-DEMO001_ses-20230609_rec-axi_T2w_ResCNN.nii.gz
+                result_sr: /flywheel/v0/work/derivatives/sub-1370042/ses-20250225/anat/sub-1370042_ses-20250225_rec-axi_T2w_ResCNN.nii.gz
            stride_inplane: 32                            
              stride_layer: 32                            
                    suffix:                               
