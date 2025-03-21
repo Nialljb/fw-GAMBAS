@@ -133,11 +133,11 @@ def download_dataset(gear_context: GearToolkitContext, container, config):
 
 
 def make_session_label(ses) -> str:
-    return ses.label.split()[0].replace("-",'')
+    return ses.label.split()[0].replace("-",'').replace("_", "")
 
 # Forcing BIDS compliance by removing spaces and dashes in subject labels
 def make_subject_label(sub) -> str:
-    return sub.label.replace("-", '').replace(" ", '') #'P'+sub.label.split('-')[1]
+    return sub.label.replace("-", '').replace(" ", '').replace("_", "") #'P'+sub.label.split('-')[1]
 
 def make_project_label(proj) -> str:
     return proj.replace("-", '_').replace(" ", '')

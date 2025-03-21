@@ -64,27 +64,6 @@ def main(context: GearToolkitContext) -> None:
                 image = manifest["custom"]["gear-builder"]["image"]
                 session_container = context.client.get(subses[sub][ses])
                 
-                # # Map raw input files from Flywheel (you may need to adapt this)
-                # inputs = {}
-                # for raw_fname in raw_fnames:
-                #     fname = os.path.basename(raw_fname)
-                #     try:
-                #         fw_file = session_container.get_file(fname)
-                #         inputs[fname] = fw_file
-                #     except:
-                #         gb._logprint(f"Could not find {fname} in Flywheel session.")
-
-                # # Create analysis with inputs
-                # analysis = session_container.add_analysis(
-                #     label=f'{gname}/{gversion}/{gdate}',
-                #     inputs=inputs
-                # )
-
-                # # Upload derivative outputs
-                # for file in deriv_fnames:
-                #     gb._logprint(f"Uploading output file: {os.path.basename(file)}")
-                #     analysis.upload_output(file)
-
                 analysis = session_container.add_analysis(label=f'{gname}/{gversion}/{gdate}')
                 analysis.update_info({"gear":gname,
                                     "version":gversion, 

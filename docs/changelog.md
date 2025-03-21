@@ -1,5 +1,14 @@
 # Changelog
 
+0.3.0 (2025-03-21) NJB
+Working version of the gear that can run at project level.
+- catches input labels with dashes and underscores that are not in the BIDS standard
+- Need to clean up code and document so is clearer
+- Could shift elements of run.py to a separate file to make it cleaner
+- Should set up catch for age? as model will run if older that the trained model but will not be accurate
+- Log output is not comming out in expected order, need to check this
+- Load in specific files for the model, rather than the whole directory
+
 0.2.4 (2025-03-21) NJB
 - Refactoring to run at the project level
 

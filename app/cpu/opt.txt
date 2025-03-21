@@ -6,7 +6,7 @@
              dataset_mode: single                        
                drop_ratio: 0                             
                   gpu_ids: -1                            
-                    image: /flywheel/v0/work/rawdata/sub-1370042/ses-20250225/anat/sub-1370042_ses-20250225_rec-axi_T2w.nii.gz
+                    image: /flywheel/v0/work/rawdata/sub-1370042/ses-20250225/anat/ants_rr_InverseWarped.nii.gz
                 init_gain: 0.02                          
                 init_type: normal                        
                 input_dir: /flywheel/v0/work/rawdata/sub-1370042/ses-20250225/anat
@@ -30,7 +30,7 @@
                     phase: test                          
                 reference: /flywheel/v0/app/TemplateKhula.nii
                  resample: False                         
-                result_sr: /flywheel/v0/work/derivatives/sub-1370042/ses-20250225/anat/sub-1370042_ses-20250225_rec-axi_T2w_ResCNN.nii.gz
+                result_sr: /flywheel/v0/work/derivatives/sub-1370042/ses-20250225/anat/ants_rr_InverseWarped_ResCNN.nii.gz
            stride_inplane: 32                            
              stride_layer: 32                            
                    suffix:                               
