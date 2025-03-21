@@ -50,7 +50,7 @@
     },
     "gear-builder": {
       "category": "analysis",
-      "image": "flywheel/gambas:0.2.3"
+      "image": "flywheel/gambas:0.2.4"
     },
     "kcl-app-binary": "app/main.sh",
     "kcl-app-modalities": [
@@ -131,5 +131,5 @@
   "name": "gambas",
   "source": "https://github.com/levente-1/GAMBAS/tree/fw-dev",
   "url": "",
-  "version": "0.2.3"
+  "version": "0.2.4"
 }

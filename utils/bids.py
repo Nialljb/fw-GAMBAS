@@ -44,7 +44,7 @@ def setup_bids_directories(projdir):
     """
 
     # Check for basic folders
-    for f in ['rawdata', 'derivatives']:
+    for f in ['rawdata', 'sourcedata', 'derivatives']:
         if not os.path.exists(f'{projdir}/{f}'):
             os.makedirs(f'{projdir}/{f}')
     
@@ -56,6 +56,9 @@ def setup_bids_directories(projdir):
     # Check for dataset description    
     dump_description(fname=f'{projdir}/rawdata/dataset_description.json',
                      D={"Name": "GAMBAS rawdata", "BIDSVersion": "1.0.2"})
+    
+    dump_description(fname=f'{projdir}/sourcedata/dataset_description.json',
+                     D={"Name": "GAMBAS sourcedata dataset", "BIDSVersion": "1.0.2", "GeneratedBy": [{"Name":"GAMBAS"}]})
     
     dump_description(fname=f'{projdir}/derivatives/dataset_description.json',
                      D={"Name": "GAMBAS derivatives dataset", "BIDSVersion": "1.0.2", "GeneratedBy": [{"Name":"GAMBAS"}]})

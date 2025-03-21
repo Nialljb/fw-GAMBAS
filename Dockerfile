@@ -18,7 +18,7 @@ COPY requirements.txt .
 RUN pip install --no-cache-dir -r requirements.txt
 
 # Install ANTs
-RUN apt-get update && apt-get install -y curl tar unzip && \
+RUN apt-get update && apt-get install -y curl tar unzip git && \
     curl -fsSL https://github.com/ANTsX/ANTs/releases/download/v2.5.4/ants-2.5.4-almalinux8-X64-gcc.zip -o /tmp/ants.tar.gz && \
     unzip /tmp/ants.tar.gz -d /opt/ && \
     rm /tmp/ants.tar.gz && \

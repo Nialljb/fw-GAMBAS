@@ -1,5 +1,8 @@
 # Changelog
 
+0.2.4 (2025-03-21) NJB
+- Refactoring to run at the project level
+
 0.1.8 (2025-03-12) NJB  
 - Updated bottleneck_5 in residual_transformers3D.py  
 - Refactored input for ants  

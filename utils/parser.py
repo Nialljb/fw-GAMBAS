@@ -55,8 +55,6 @@ def parse_config(context):
     container = context.client.get(input_id)
     # print(f"Container type: {container.container_type}")
 
-
-
     # Read config.json file
     with open(base_dir + '/config.json') as f:
         config = json.load(f)
@@ -142,12 +140,13 @@ def parse_config(context):
 def download_dataset(gear_context: GearToolkitContext, container, config):
     
     work_dir = config['work_dir']
-    source_data_dir = os.path.join(work_dir, 'sourcedata')
-    os.makedirs(source_data_dir, exist_ok=True)
-    
+
     setup_bids_directories(work_dir)
     import_options = {'config': config['bids_config_file'], 'projdir': work_dir, 'skip_dcm2niix': True}
 
+    source_data_dir = os.path.join(work_dir, 'sourcedata')
+    os.makedirs(source_data_dir, exist_ok=True)
+    
     print(f"Downloading {container.label}...")
     print(f"Container type: {container.container_type}" )
 
