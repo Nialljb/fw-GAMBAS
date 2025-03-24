@@ -11,7 +11,7 @@ from tqdm import tqdm
 import datetime
 import subprocess
 
-def Registration(image, template):
+def Registration(image, template, sub, ses):
     """
     Runs antsRegistrationSyNQuick.sh with the provided parameters.
 
@@ -24,7 +24,7 @@ def Registration(image, template):
         None
     """
 
-    work = "/flywheel/v0/work/"
+    work = f"/flywheel/v0/work/rawdata/sub-{sub}/ses-{ses}/anat/"
     os.makedirs(work, exist_ok=True)  # Creates directory if it doesn't exist
     output_prefix = os.path.join(work, "ants_rr_")  # Ensures proper path joining
 
@@ -250,24 +250,4 @@ def inference(model, image_path, result_path, resample, resolution, patch_size_x
     writer.Execute(label)
     print("{}: Save evaluate label at {} success".format(datetime.datetime.now(), result_path))
 
-
-# if __name__ == '__main__':
-
-#     referencePath = "/flywheel/v0/app/TemplateKhula.nii"
-
-#     opt = TestOptions().parse()
-
-#     image = sitk.ReadImage(opt.image)
-#     reference = sitk.ReadImage(referencePath)
-
-#     outPath = opt.result_ulf
-
-#     image, reference = Registration(image, reference)
-#     sitk.WriteImage(image, outPath)
-
-#     model = create_model(opt)
-#     model.setup(opt)
-
-#     inference(model, outPath, opt.result_sr, opt.resample, opt.new_resolution, opt.patch_size[0],
-#               opt.patch_size[1], opt.patch_size[2], opt.stride_inplane, opt.stride_layer, 1)
-
+    return result_path
