@@ -49,7 +49,6 @@ def Registration(image, template, sub, ses):
         # print("Registration errors:", result.stderr)
         logger.debug("ANTS stdout: " + result.stdout)
         logger.debug("ANTS stderr: " + result.stderr)
-        logger.info("ANTS registration completed successfully.")
     except subprocess.CalledProcessError as e:
         # print("ANTS Registration failed!")
         # print("Error message:", e.stderr)

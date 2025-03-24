@@ -281,14 +281,9 @@ def parse_input_files(layout, sub, ses, show_summary=True):
         if not layout:
             logger.error("No layout provided. Exiting parse_input_files.")
             raise ValueError("Empty layout provided")
-        
-        my_files = {'axi':[], 'sag':[], 'cor':[]}
-        logger.debug(f"Parsed files: {my_files}")
-
-        if not any(my_files.values()):
-            logger.error("No files found in the layout.")
-            raise ValueError("No files found in the layout")
         else:
+            my_files = {'axi':[], 'sag':[], 'cor':[]}
+
             for ax in my_files.keys():
                 files = layout.get(scope='raw', extension='.nii.gz', subject=sub, reconstruction=ax, session=ses)
                 

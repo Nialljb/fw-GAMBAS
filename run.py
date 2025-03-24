@@ -70,7 +70,14 @@ def main(context: GearToolkitContext) -> None:
                     continue
                 if not deriv_fnames:
                     gb._logprint(f"[ERROR] Processing failed for {sub}/{ses}: No derived output.")
-
+                    # Delete files in raw_fnames because derived output is missing
+                    for file_path in raw_fnames:
+                        try:
+                            os.remove(file_path)
+                            gb._logprint(f"Deleted raw file: {file_path}")
+                        except Exception as e:
+                            gb._logprint(f"Error deleting {file_path}: {e}")
+                    continue
 
                 out_files = []
                 out_files.extend(raw_fnames)
@@ -93,12 +100,10 @@ def main(context: GearToolkitContext) -> None:
                                     "note": "No derived outputs, processing may have failed." if not deriv_fnames else "",
                                     **config})
 
-
                 for file in out_files:
                     gb._logprint(f"Uploading output file: {os.path.basename(file)}")
                     analysis.upload_output(file)
 
-            gb._logprint("Copying output files")
 
             # if not os.path.exists(config['output_dir']):
             #     os.makedirs(config['output_dir'])
