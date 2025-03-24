@@ -29,7 +29,7 @@ def Registration(image, template, sub, ses):
 
     work = f"/flywheel/v0/work/rawdata/sub-{sub}/ses-{ses}/anat/"
     os.makedirs(work, exist_ok=True)  # Creates directory if it doesn't exist
-    output_prefix = os.path.join(work, "ants_rr_")  # Ensures proper path joining
+    output_prefix = os.path.join(work, f"AR_{ses}")  # Ensures proper path joining
 
     print(f"Registering {image} to {template}...")
     print(f"Output will be saved to {output_prefix}")
@@ -58,8 +58,13 @@ def Registration(image, template, sub, ses):
         raise
 
     output_image = output_prefix + "Warped.nii.gz"
-
-    return output_image
+    # Check if the file exists on disk
+    if not os.path.exists(output_image):
+        # File wasn't created; return None
+        return None
+    else:
+        # File exists; return its path
+        return output_image
 
 def from_numpy_to_itk(image_np, image_itk):
     image_np = np.transpose(image_np, (2, 1, 0))

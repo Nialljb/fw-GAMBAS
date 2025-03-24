@@ -92,10 +92,22 @@ def download_dataset(gear_context: GearToolkitContext, container, config):
     print(f"Downloading {container.label}...")
     print(f"Container type: {container.container_type}" )
 
+    if container.container_type == 'file':
+        ses_container = gear_context.client.get(container.parents.session)
+        sub_label = make_subject_label(gear_context.client.get(container.parents.subject))
+        ses_label = make_session_label(ses_container)
+        ses_id = ses_container.id
+
+        for acq in ses_container.acquisitions.iter():
+            for file in acq.files:
+                if container.id == file.id:
+                    download_file(file, ses_dir, dry_run=False)
+        return {sub_label: {ses_label: ses_id}}
+
     # Need to have a condition to check if a single file has been uploaded. If so this means there may have been multiple in a session and this is the file to process
     # If this is the case should copy it to the same directory as the other files and then process as normal without going through the download process
 
-    if container.container_type == 'project':
+    elif container.container_type == 'project':
         proj_label, subjects = download_project(container, source_data_dir, force_run, dry_run=False)
         print(f"Downlaoded project data, moving on to making BIDS structure...")
 
@@ -177,9 +189,6 @@ def download_file(file, my_dir, dry_run=False) -> str:
 
         print(f"Downloaded file: {file.name}")
 
-    # else:
-    #     print(f"Skipping file: {file.name}")
-
     return file.name
 
 
@@ -210,19 +219,6 @@ def download_session(ses_container, sub_dir, force_run, dry_run=False) -> Tuple[
         for acq in ses_container.acquisitions.iter():
             for file in acq.files:
                 download_file(file, ses_dir, dry_run=dry_run)
-
-
-    # age_check, age = check_age(ses_id) 
-
-    # if age_check == False:
-    #     print(f"Age {age} is not within the model range 3 months - 3 years")
-        
-    # else:
-    #     print(f"Saving data into: {ses_dir}")
-
-    #     for acq in ses_container.acquisitions.iter():
-    #         for file in acq.files:
-    #             download_file(file, ses_dir, dry_run=dry_run)
 
     return ses_label, ses_dir, ses_id
 

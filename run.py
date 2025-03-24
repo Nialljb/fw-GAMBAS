@@ -154,32 +154,79 @@ def fw_process_subject(layout, sub, ses, which_model, config):
         deriv_fnames = []
         raw_fnames = [x.path for x in all_t2]
 
-        print('Setting up options for model')
-        logging.info(f"Setting up options for model {which_model}")
-        # NOTE: Need to pass input, output dirs here!!
-        opt = TestOptions(which_model=which_model, config=config, sub=sub, ses=ses).parse()
-        
-        print('Registering images')
-        logging.info(f"Registering images for {sub}-{ses}")
-        input_image = Registration(opt.image, opt.reference, sub, ses)
+        for f in raw_fnames:
+            try:
+                gb._logprint(f"Input file: {f}")
 
-        print('Creating model')
-        logging.info(f"Creating model for {sub}-{ses}")
-        model = create_model(opt)
-        model.setup(opt)
+                print('Setting up options for model')
+                logging.info(f"Setting up options for model {which_model}")
+                # Pass the current file to TestOptions if needed.
+                opt = TestOptions(which_model=which_model, config=config, sub=sub, ses=ses, image=f).parse()
+                
+                print('Registering images')
+                logging.info(f"Registering images for {sub}-{ses}")
+                input_image = Registration(opt.image, opt.reference, sub, ses)
 
-        print('Running inference')
-        logging.info(f"Running inference for {sub}-{ses}")
-        fname = inference(model, input_image, opt.result_sr, opt.resample, opt.new_resolution, opt.patch_size[0],
-                opt.patch_size[1], opt.patch_size[2], opt.stride_inplane, opt.stride_layer, 1)
-        
-        if fname:
-            deriv_fnames.append(fname)
-            logging.info(f"Inference completed")
-            logging.info(f"Output file: {fname}")
-        else:
-            logging.error(f"Inference failed")
-            logging.error(f"No output file generated")
+                if input_image is None:
+                    logging.warning(f"Registration failed for subject {sub} session {ses}. Skipping this iteration.")
+                    continue  # Skip to the next iteration if registration fails
+
+                print('Creating model')
+                logging.info(f"Creating model for {sub}-{ses}")
+                model = create_model(opt)
+                model.setup(opt)
+
+                print('Running inference')
+                logging.info(f"Running inference for {sub}-{ses}")
+                fname = inference(model, input_image, opt.result_sr, opt.resample, opt.new_resolution,
+                                opt.patch_size[0], opt.patch_size[1], opt.patch_size[2],
+                                opt.stride_inplane, opt.stride_layer, 1)
+                
+                if fname:
+                    deriv_fnames.append(fname)
+                    logging.info("Inference completed")
+                    logging.info(f"Output file: {fname}")
+                else:
+                    logging.error("Inference failed")
+                    logging.error("No output file generated")
+            except Exception as e:
+                # Log the error for this file and continue with the next one.
+                logging.error(f"Error processing file {f} for subject {sub} session {ses}: {e}")
+                continue  # Continue with the next file
+
+        # for f in raw_fnames:
+        #     gb._logprint(f"Input file: {f}")
+
+        #     print('Setting up options for model')
+        #     logging.info(f"Setting up options for model {which_model}")
+        #     # NOTE: Need to pass input, output dirs here!!
+        #     opt = TestOptions(which_model=which_model, config=config, sub=sub, ses=ses, image = f).parse()
+            
+        #     print('Registering images')
+        #     logging.info(f"Registering images for {sub}-{ses}")
+        #     input_image = Registration(opt.image, opt.reference, sub, ses)
+
+        #     if input_image is None:
+        #         logging.warning(f"Registration failed for subject {sub} session {ses}. Skipping this iteration.")
+        #         continue  # Skip to the next iteration of the loop
+
+        #     print('Creating model')
+        #     logging.info(f"Creating model for {sub}-{ses}")
+        #     model = create_model(opt)
+        #     model.setup(opt)
+
+        #     print('Running inference')
+        #     logging.info(f"Running inference for {sub}-{ses}")
+        #     fname = inference(model, input_image, opt.result_sr, opt.resample, opt.new_resolution, opt.patch_size[0],
+        #             opt.patch_size[1], opt.patch_size[2], opt.stride_inplane, opt.stride_layer, 1)
+            
+            if fname:
+                deriv_fnames.append(fname)
+                logging.info(f"Inference completed")
+                logging.info(f"Output file: {fname}")
+            else:
+                logging.error(f"Inference failed")
+                logging.error(f"No output file generated")
 
     except Exception as e:
         logging.error(f"Error processing subject {sub} session {ses}: {e}")
