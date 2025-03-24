@@ -4,10 +4,13 @@ from typing import Tuple
 import os
 import re
 from flywheel_gear_toolkit import GearToolkitContext
+import flywheel
 import json
 import os
 import subprocess
 from string import ascii_lowercase as alc
+import warnings
+from datetime import datetime
 
 from utils.bids import import_dicom_folder, setup_bids_directories
 
@@ -126,7 +129,6 @@ def download_dataset(gear_context: GearToolkitContext, container, config):
         source_data_dir = os.path.join(source_data_dir, proj_label, sub_label)
         
         ses_label, ses_dir, ses_id = download_session(container, source_data_dir, dry_run=False)
-
         import_dicom_folder(dicom_dir=ses_dir, sub_name=sub_label, ses_name=ses_label, **import_options)
 
         return {sub_label: {ses_label: ses_id}}
@@ -187,13 +189,18 @@ def download_session(ses_container, sub_dir, dry_run=False) -> Tuple[str, str]:
     ses_label = make_session_label(ses_container)
     ses_dir = os.path.join(sub_dir, ses_label)
     ses_id = ses_container.id
-    print(f"Saving data into: {ses_dir}")
 
-    for acq in ses_container.acquisitions.iter():
-        # print(f"Acquisition: {acq.label}")
-        for file in acq.files:
-            # print(f"File: {file.name}")
-            download_file(file, ses_dir, dry_run=dry_run)
+    age_check, age = check_age(ses_id) 
+
+    if age_check == False:
+        print(f"Age {age} is not within the model range 3 months - 3 years")
+        
+    else:
+        print(f"Saving data into: {ses_dir}")
+
+        for acq in ses_container.acquisitions.iter():
+            for file in acq.files:
+                download_file(file, ses_dir, dry_run=dry_run)
 
     return ses_label, ses_dir, ses_id
 
@@ -242,3 +249,131 @@ def download_project(project, my_dir, dry_run=False):
         subjects_out[sub_lab] = sessions_dict
 
     return proj_name, subjects_out
+
+
+def parse_input_files(layout, sub, ses, show_summary=True):
+
+    my_files = {'axi':[], 'sag':[], 'cor':[]}
+
+    for ax in my_files.keys():
+        files = layout.get(scope='raw', extension='.nii.gz', subject=sub, reconstruction=ax, session=ses)
+        
+        if ax == 'axi':
+
+            if len(files)==2:
+                axi1 = layout.get(scope='raw', extension='.nii.gz', subject=sub, reconstruction='axi', session=ses, run=1)[0]
+                axi2 = layout.get(scope='raw', extension='.nii.gz', subject=sub, reconstruction='axi', session=ses, run=2)[0]
+                my_files['axi'] = [axi1, axi2]
+
+            elif len(files)==1:
+                my_files['axi'] = layout.get(scope='raw', extension='.nii.gz', subject=sub, reconstruction='axi', session=ses)
+            
+            else:
+                warnings.warn(f'Expected to find 1 or 2 axial scans. Found {len(files)} axial scans')
+
+        else:
+            if len(files) == 1:
+                my_files[ax] = files
+            elif len(files) > 1:
+                my_files[ax] = [files[0]]
+            else:
+                warnings.warn(f"Found no {ax} scans")
+    
+    if show_summary:
+        print(f"--- SUB: {sub}, SES: {ses} ---")
+        print(f"Axial: {len(my_files['axi'])} scans")
+        # print(f"Cor: {len(my_files['cor'])} scans")
+        # print(f"Sag: {len(my_files['sag'])} scans")
+
+    return my_files
+
+def check_age(ses_id):
+    """Check if the age is within the model range 3months - 3 years"""
+    # check custom fields for age, then check Age field, then check dicom headers
+    context = flywheel.GearContext()
+    ses = context.client.get(ses_id)
+
+    # Read config.json file
+    p = open('/flywheel/v0/config.json')
+    config = json.loads(p.read())
+    # Read API key in config file
+    api_key = (config['inputs']['api-key']['key'])
+    fw = flywheel.Client(api_key=api_key)
+
+    print(f"Checking age in session demographic sync...")
+
+    if 'age_at_scan_months' in ses.info and ses.info['age_at_scan_months'] not in (0, None): 
+        age_in_months = ses.info['age_at_scan_months']
+        print(f"Age in months in session demographic sync: {age_in_months}")
+    else:
+        print("No age in session demographic sync...")
+        print("Checking age in dicom header...")
+        for acq in ses.acquisitions.iter():
+            acq = acq.reload()
+            if 'T2' in acq.label and 'AXI' in acq.label and 'Segmentation' not in acq.label and 'Align' not in acq.label: 
+                for file_obj in acq.files: # get the files in the acquisition
+                    # Screen file object information & download the desired file
+                    if file_obj['type'] == 'dicom':
+                        dicom_header = fw._fw.get_acquisition_file_info(acq.id, file_obj.name)
+                        print(f"Acquisition label: {acq.label}")
+                        if 'PatientBirthDate' in dicom_header.info:
+                            print("Checking DOB in dicom header...")
+                            try:
+                                dob = dicom_header.info['PatientBirthDate']
+                                seriesDate = dicom_header.info['SeriesDate']
+                                # Validate date format and presence of SeriesDate
+                                if not seriesDate:
+                                    raise ValueError("SeriesDate is missing")
+                                    
+                                # Calculate age at scan
+                                age = (datetime.strptime(seriesDate, '%Y%m%d')) - (datetime.strptime(dob, '%Y%m%d'))
+                                age_in_days = age.days
+                                age_in_months = int(age_in_days / 30.44)
+                                print(f"Age in months in dicom header: {age_in_months}")
+
+                                # Sanity check for negative ages or unreasonable values
+                                if age_in_days < 0:
+                                    raise ValueError(f"Invalid age calculation: {age_in_days} days")
+                                        
+                            except ValueError as e:
+                                print(f"Error processing dates: {e}")
+                                raise
+
+                        elif 'PatientAge' in dicom_header.info:
+                            print("No DOB in dicom header or age in session info! Trying PatientAge from dicom...")
+                            try:
+                                age = dicom_header.info['PatientAge']
+                                if not age:
+                                    raise ValueError("PatientAge is empty")
+                                    
+                                if age.endswith('M'):
+                                    # Remove leading zeros and 'M', then convert to int
+                                    age_in_months = int(age.rstrip('M').lstrip('0'))
+                                    if age_in_months == 0:
+                                        raise ValueError("Age cannot be 0 months")
+                                    age_in_days = int(age_in_months * 30.44)
+                                else:
+                                    # Original case for days ('D')
+                                    age = re.sub('\D', '', age)
+                                    age_in_days = int(age)
+                                    age_in_months = int(age_in_days / 30.44)
+                                    
+                                # Sanity check
+                                if age_in_days < 0 or age_in_days > 36500:
+                                    raise ValueError(f"Unreasonable age value: {age_in_days} days")
+                                    
+                            except (ValueError, TypeError) as e:
+                                print(f"Error processing DICOM age: {e}")
+                                raise
+                        else:
+                            print("No age at scan in session info label! Ask PI...")
+                            raise ValueError("No valid age information found")
+        
+    # accept age in months between 1 and 42 months (3.5 years)
+    if age_in_months > 1 and age_in_months < 42:
+        return True, age_in_months
+    else:
+        return False, age_in_months
+
+
+

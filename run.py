@@ -4,8 +4,8 @@ import logging
 import os
 import sys
 import bids
-import warnings
 from datetime import datetime
+from io import StringIO
 
 # import flywheel functions
 from flywheel_gear_toolkit import GearToolkitContext
@@ -18,6 +18,7 @@ from models import create_model
 from app.main import inference
 from app.main import Registration
 import utils.bids as gb
+from utils.parser import parse_input_files
 
 # Add top-level package directory to sys.path
 sys.path.append(os.path.abspath(os.path.join(os.path.dirname(__file__), '..')))
@@ -61,11 +62,12 @@ def main(context: GearToolkitContext) -> None:
     print('Step 4: Processing each subject')
     for sub in subses.keys():
             for ses in subses[sub].keys():
-                raw_fnames, deriv_fnames = fw_process_subject(layout, sub, ses, which_model, config)
+                raw_fnames, deriv_fnames, logs = fw_process_subject(layout, sub, ses, which_model, config)
         
                 out_files = []
                 out_files.extend(raw_fnames)
                 out_files.extend(deriv_fnames)
+                out_files.extend(logs)
 
                 # Create a new analysis
                 gversion = manifest["version"]
@@ -74,7 +76,7 @@ def main(context: GearToolkitContext) -> None:
                 image = manifest["custom"]["gear-builder"]["image"]
                 session_container = context.client.get(subses[sub][ses])
                 
-                analysis = session_container.add_analysis(label=f'{gname}/{gversion}/{gdate}')
+                analysis = session_container.add_analysis(label=f'{gname}/{gversion} {gdate}')
                 analysis.update_info({"gear":gname,
                                     "version":gversion, 
                                     "image":image,
@@ -91,48 +93,10 @@ def main(context: GearToolkitContext) -> None:
             if not os.path.exists(config['output_dir']):
                 os.makedirs(config['output_dir'])
 
-
-
-def parse_input_files(layout, sub, ses, show_summary=True):
-
-    my_files = {'axi':[], 'sag':[], 'cor':[]}
-
-    for ax in my_files.keys():
-        files = layout.get(scope='raw', extension='.nii.gz', subject=sub, reconstruction=ax, session=ses)
-        
-        if ax == 'axi':
-
-            if len(files)==2:
-                axi1 = layout.get(scope='raw', extension='.nii.gz', subject=sub, reconstruction='axi', session=ses, run=1)[0]
-                axi2 = layout.get(scope='raw', extension='.nii.gz', subject=sub, reconstruction='axi', session=ses, run=2)[0]
-                my_files['axi'] = [axi1, axi2]
-
-            elif len(files)==1:
-                my_files['axi'] = layout.get(scope='raw', extension='.nii.gz', subject=sub, reconstruction='axi', session=ses)
-            
-            else:
-                warnings.warn(f'Expected to find 1 or 2 axial scans. Found {len(files)} axial scans')
-
-        else:
-            if len(files) == 1:
-                my_files[ax] = files
-            elif len(files) > 1:
-                my_files[ax] = [files[0]]
-            else:
-                warnings.warn(f"Found no {ax} scans")
-    
-    if show_summary:
-        print(f"--- SUB: {sub}, SES: {ses} ---")
-        print(f"Axial: {len(my_files['axi'])} scans")
-        # print(f"Cor: {len(my_files['cor'])} scans")
-        # print(f"Sag: {len(my_files['sag'])} scans")
-
-    return my_files
-
-
+# The main function for processing a subject
 def fw_process_subject(layout, sub, ses, which_model, config):
     """
-    Process the Unity QA data for a subject.
+    Run the model on the input files for a subject and session.
 
     Args:
         layout (Layout): The BIDS Layout object.
@@ -146,39 +110,72 @@ def fw_process_subject(layout, sub, ses, which_model, config):
         list: The list of derivative filenames.
     """
 
-    print('Parsing input files')
-    print(f"sub: {sub}, ses: {ses}")
-    
-    my_files = parse_input_files(layout, sub, ses)
-    print(my_files)
-    
-    gb._logprint(f'Starting for {sub}-{ses}')
+    # Set up in-memory log capture for this subject
+    log_stream = StringIO()
+    handler = logging.StreamHandler(log_stream)
+    handler.setLevel(logging.INFO)
+    formatter = logging.Formatter('%(asctime)s - %(levelname)s - %(message)s')
+    handler.setFormatter(formatter)
+
+    # Attach handler to root logger
+    logger = logging.getLogger()
+    logger.addHandler(handler)
+    logs = []
+
+    try:
+        logging.info(f"Processing subject {sub} session {ses}")
+
+        print('Parsing input files')
+        print(f"sub: {sub}, ses: {ses}")
+        
+        my_files = parse_input_files(layout, sub, ses)
+        print(my_files)
+        
+        gb._logprint(f'Starting for {sub}-{ses}')
 
 
-    all_t2 = [*my_files['axi'], *my_files['sag'], *my_files['cor']]
+        all_t2 = [*my_files['axi'], *my_files['sag'], *my_files['cor']]
 
-    deriv_fnames = []
-    raw_fnames = [x.path for x in all_t2]
+        deriv_fnames = []
+        raw_fnames = [x.path for x in all_t2]
 
-    print('Setting up options for model')
-    # NOTE: Need to pass input, output dirs here!!
-    opt = TestOptions(which_model=which_model, config=config, sub=sub, ses=ses).parse()
+        print('Setting up options for model')
+        # NOTE: Need to pass input, output dirs here!!
+        opt = TestOptions(which_model=which_model, config=config, sub=sub, ses=ses).parse()
 
-    print('Registering images')
-    input_image = Registration(opt.image, opt.reference, sub, ses)
-    # sitk.WriteImage(image, outPath)
+        print('Registering images')
+        input_image = Registration(opt.image, opt.reference, sub, ses)
+        # sitk.WriteImage(image, outPath)
 
-    print('Creating model')
-    model = create_model(opt)
-    model.setup(opt)
+        print('Creating model')
+        model = create_model(opt)
+        model.setup(opt)
 
-    print('Running inference')
-    fname = inference(model, input_image, opt.result_sr, opt.resample, opt.new_resolution, opt.patch_size[0],
-              opt.patch_size[1], opt.patch_size[2], opt.stride_inplane, opt.stride_layer, 1)
-    
-    deriv_fnames.append(fname)
+        print('Running inference')
+        fname = inference(model, input_image, opt.result_sr, opt.resample, opt.new_resolution, opt.patch_size[0],
+                opt.patch_size[1], opt.patch_size[2], opt.stride_inplane, opt.stride_layer, 1)
+        
+        deriv_fnames.append(fname)
 
-    return raw_fnames, deriv_fnames
+    except Exception as e:
+        logging.error(f"Error processing subject {sub} session {ses}: {e}")
+        # raise e
+
+    finally:
+        # Write captured log to file
+        log_contents = log_stream.getvalue()
+        log_filename = os.path.join(gear_context.output_dir, f"sub-{sub}_ses-{ses}_log.txt")
+        with open(log_filename, 'w') as f:
+            f.write(log_contents)
+
+        # Clean up
+        logger.removeHandler(handler)
+        log_stream.close()
+
+        # Append log filename to logs list
+        logs.append(log_filename)
+
+    return raw_fnames, deriv_fnames, logs
 
 # Only execute if file is run as main, not when imported by another module
 if __name__ == "__main__":  # pragma: no cover

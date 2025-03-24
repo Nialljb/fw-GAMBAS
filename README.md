@@ -28,7 +28,7 @@ Baljer, L., Zhang, Y., Bourke, N.J., Donald, K.A., Bradford, L.E., Ringshaw, J.E
 
 *Gear Level:*
 
-* [ ] Project
+* [x] Project
 * [ ] Subject
 * [x] Session
 * [ ] Acquisition
