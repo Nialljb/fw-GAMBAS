@@ -64,6 +64,14 @@ def main(context: GearToolkitContext) -> None:
             for ses in subses[sub].keys():
                 raw_fnames, deriv_fnames, logs = fw_process_subject(layout, sub, ses, which_model, config)
         
+                # Check for missing input or output
+                if not raw_fnames:
+                    gb._logprint(f"[SKIPPING] No input files for {sub}/{ses}.")
+                    continue
+                if not deriv_fnames:
+                    gb._logprint(f"[ERROR] Processing failed for {sub}/{ses}: No derived output.")
+
+
                 out_files = []
                 out_files.extend(raw_fnames)
                 out_files.extend(deriv_fnames)
@@ -81,6 +89,8 @@ def main(context: GearToolkitContext) -> None:
                                     "version":gversion, 
                                     "image":image,
                                     "Date":gdate,
+                                    "status": "failed" if not deriv_fnames else "success",
+                                    "note": "No derived outputs, processing may have failed." if not deriv_fnames else "",
                                     **config})
 
 
@@ -90,8 +100,8 @@ def main(context: GearToolkitContext) -> None:
 
             gb._logprint("Copying output files")
 
-            if not os.path.exists(config['output_dir']):
-                os.makedirs(config['output_dir'])
+            # if not os.path.exists(config['output_dir']):
+            #     os.makedirs(config['output_dir'])
 
 # The main function for processing a subject
 def fw_process_subject(layout, sub, ses, which_model, config):
@@ -140,22 +150,31 @@ def fw_process_subject(layout, sub, ses, which_model, config):
         raw_fnames = [x.path for x in all_t2]
 
         print('Setting up options for model')
+        logging.info(f"Setting up options for model {which_model}")
         # NOTE: Need to pass input, output dirs here!!
         opt = TestOptions(which_model=which_model, config=config, sub=sub, ses=ses).parse()
-
+        
         print('Registering images')
+        logging.info(f"Registering images for {sub}-{ses}")
         input_image = Registration(opt.image, opt.reference, sub, ses)
-        # sitk.WriteImage(image, outPath)
 
         print('Creating model')
+        logging.info(f"Creating model for {sub}-{ses}")
         model = create_model(opt)
         model.setup(opt)
 
         print('Running inference')
+        logging.info(f"Running inference for {sub}-{ses}")
         fname = inference(model, input_image, opt.result_sr, opt.resample, opt.new_resolution, opt.patch_size[0],
                 opt.patch_size[1], opt.patch_size[2], opt.stride_inplane, opt.stride_layer, 1)
         
-        deriv_fnames.append(fname)
+        if fname:
+            deriv_fnames.append(fname)
+            logging.info(f"Inference completed")
+            logging.info(f"Output file: {fname}")
+        else:
+            logging.error(f"Inference failed")
+            logging.error(f"No output file generated")
 
     except Exception as e:
         logging.error(f"Error processing subject {sub} session {ses}: {e}")
@@ -164,7 +183,8 @@ def fw_process_subject(layout, sub, ses, which_model, config):
     finally:
         # Write captured log to file
         log_contents = log_stream.getvalue()
-        log_filename = os.path.join(gear_context.output_dir, f"sub-{sub}_ses-{ses}_log.txt")
+        # log_filename = os.path.join(gear_context.output_dir, f"sub-{sub}_ses-{ses}_log.txt")
+        log_filename = os.path.join(gear_context.work_dir, f"sub-{sub}_ses-{ses}_log.txt")
         with open(log_filename, 'w') as f:
             f.write(log_contents)
 

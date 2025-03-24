@@ -10,6 +10,7 @@ from torch.autograd import Variable
 from tqdm import tqdm
 import datetime
 import subprocess
+import logging
 
 def Registration(image, template, sub, ses):
     """
@@ -23,6 +24,8 @@ def Registration(image, template, sub, ses):
     Returns:
         None
     """
+    logger = logging.getLogger(__name__)
+    logger.info("Starting ANTs registration")
 
     work = f"/flywheel/v0/work/rawdata/sub-{sub}/ses-{ses}/anat/"
     os.makedirs(work, exist_ok=True)  # Creates directory if it doesn't exist
@@ -42,11 +45,17 @@ def Registration(image, template, sub, ses):
 
     try:
         result = subprocess.run(command, check=True, stdout=subprocess.PIPE, stderr=subprocess.PIPE, text=True)
-        print("Registration output:", result.stdout)
-        print("Registration errors:", result.stderr)
+        # print("Registration output:", result.stdout)
+        # print("Registration errors:", result.stderr)
+        logger.debug("ANTS stdout: " + result.stdout)
+        logger.debug("ANTS stderr: " + result.stderr)
+        logger.info("ANTS registration completed successfully.")
     except subprocess.CalledProcessError as e:
-        print("ANTS Registration failed!")
-        print("Error message:", e.stderr)
+        # print("ANTS Registration failed!")
+        # print("Error message:", e.stderr)
+        logger.error("ANTS registration failed.")
+        logger.error("Return code: " + str(e.returncode))
+        logger.error("Error output: " + e.stderr)
         raise
 
     output_image = output_prefix + "Warped.nii.gz"

@@ -11,6 +11,7 @@ import subprocess
 from string import ascii_lowercase as alc
 import warnings
 from datetime import datetime
+import logging
 
 from utils.bids import import_dicom_folder, setup_bids_directories
 
@@ -80,6 +81,7 @@ def parse_config(context):
 def download_dataset(gear_context: GearToolkitContext, container, config):
     
     work_dir = config['work_dir']
+    force_run = config['force_run']
 
     setup_bids_directories(work_dir)
     import_options = {'config': config['bids_config_file'], 'projdir': work_dir, 'skip_dcm2niix': True}
@@ -94,7 +96,7 @@ def download_dataset(gear_context: GearToolkitContext, container, config):
     # If this is the case should copy it to the same directory as the other files and then process as normal without going through the download process
 
     if container.container_type == 'project':
-        proj_label, subjects = download_project(container, source_data_dir, dry_run=False)
+        proj_label, subjects = download_project(container, source_data_dir, force_run, dry_run=False)
         print(f"Downlaoded project data, moving on to making BIDS structure...")
 
         output = {}
@@ -113,7 +115,7 @@ def download_dataset(gear_context: GearToolkitContext, container, config):
         proj_label = gear_context.client.get(container.parents.project).label
         source_data_dir = os.path.join(source_data_dir, proj_label)
         
-        sub_label, sessions = download_subject(container, source_data_dir, dry_run=False)
+        sub_label, sessions = download_subject(container, source_data_dir, force_run, dry_run=False)
         
         output = {sub_label:{}}
 
@@ -128,7 +130,7 @@ def download_dataset(gear_context: GearToolkitContext, container, config):
         sub_label = make_subject_label(gear_context.client.get(container.parents.subject))
         source_data_dir = os.path.join(source_data_dir, proj_label, sub_label)
         
-        ses_label, ses_dir, ses_id = download_session(container, source_data_dir, dry_run=False)
+        ses_label, ses_dir, ses_id = download_session(container, source_data_dir, force_run, dry_run=False)
         import_dicom_folder(dicom_dir=ses_dir, sub_name=sub_label, ses_name=ses_label, **import_options)
 
         return {sub_label: {ses_label: ses_id}}
@@ -181,31 +183,51 @@ def download_file(file, my_dir, dry_run=False) -> str:
     return file.name
 
 
-def download_session(ses_container, sub_dir, dry_run=False) -> Tuple[str, str]:
+def download_session(ses_container, sub_dir, force_run, dry_run=False) -> Tuple[str, str]:
     print("--- Downloading session ---")
     print(f"Session label: {ses_container.label}")
     print(f"Acquisitions: {len(ses_container.acquisitions())}")
+    print(f"force_run: {force_run}")
 
     ses_label = make_session_label(ses_container)
     ses_dir = os.path.join(sub_dir, ses_label)
     ses_id = ses_container.id
 
-    age_check, age = check_age(ses_id) 
-
-    if age_check == False:
-        print(f"Age {age} is not within the model range 3 months - 3 years")
-        
+    if force_run:
+        print(f"[FORCE RUN] Skipping age check and saving data into: {ses_dir}")
+        proceed = True
+        age = "unknown"  # Optional, if you still want to log age
     else:
-        print(f"Saving data into: {ses_dir}")
+        age_check, age = check_age(ses_id)
+        if not age_check:
+            print(f"Age {age} is not within the model range 3 months - 3 years")
+            proceed = False
+        else:
+            print(f"Saving data into: {ses_dir}")
+            proceed = True
 
+    if proceed:
         for acq in ses_container.acquisitions.iter():
             for file in acq.files:
                 download_file(file, ses_dir, dry_run=dry_run)
 
+
+    # age_check, age = check_age(ses_id) 
+
+    # if age_check == False:
+    #     print(f"Age {age} is not within the model range 3 months - 3 years")
+        
+    # else:
+    #     print(f"Saving data into: {ses_dir}")
+
+    #     for acq in ses_container.acquisitions.iter():
+    #         for file in acq.files:
+    #             download_file(file, ses_dir, dry_run=dry_run)
+
     return ses_label, ses_dir, ses_id
 
 
-def download_subject(sub_container, proj_dir, dry_run=False):
+def download_subject(sub_container, proj_dir, force_run, dry_run=False):
     print("--- Downloading subject ---")
     print(f"Label: {sub_container.label}")
     print(f"Sessions: {len(sub_container.sessions())}")
@@ -217,7 +239,7 @@ def download_subject(sub_container, proj_dir, dry_run=False):
     sessions_out = {}
 
     for ses in sub_container.sessions.iter():
-        ses_label0, ses_dir, ses_id = download_session(ses, sub_dir, dry_run=dry_run)
+        ses_label0, ses_dir, ses_id = download_session(ses, sub_dir, force_run, dry_run=dry_run)
 
         # Check for duplicate session labels
         ses_label = ses_label0; i = 0
@@ -232,7 +254,7 @@ def download_subject(sub_container, proj_dir, dry_run=False):
     return sub_label, sessions_out
 
 
-def download_project(project, my_dir, dry_run=False):
+def download_project(project, my_dir, force_run, dry_run=False):
     print("--- Downloading project ---")
     print(f"Label: {project.label}")
     print(f"Subjects: {project.stats.number_of.subjects}")
@@ -245,40 +267,55 @@ def download_project(project, my_dir, dry_run=False):
     
     subjects_out = {}
     for sub in project.subjects.iter():
-        sub_lab, sessions_dict = download_subject(sub, my_dir, dry_run=dry_run)
+        sub_lab, sessions_dict = download_subject(sub, my_dir, force_run, dry_run=dry_run)
         subjects_out[sub_lab] = sessions_dict
 
     return proj_name, subjects_out
 
 
 def parse_input_files(layout, sub, ses, show_summary=True):
+    logger = logging.getLogger(__name__)
 
-    my_files = {'axi':[], 'sag':[], 'cor':[]}
-
-    for ax in my_files.keys():
-        files = layout.get(scope='raw', extension='.nii.gz', subject=sub, reconstruction=ax, session=ses)
+    try:
+        # Example: Validate input layout
+        if not layout:
+            logger.error("No layout provided. Exiting parse_input_files.")
+            raise ValueError("Empty layout provided")
         
-        if ax == 'axi':
+        my_files = {'axi':[], 'sag':[], 'cor':[]}
+        logger.debug(f"Parsed files: {my_files}")
 
-            if len(files)==2:
-                axi1 = layout.get(scope='raw', extension='.nii.gz', subject=sub, reconstruction='axi', session=ses, run=1)[0]
-                axi2 = layout.get(scope='raw', extension='.nii.gz', subject=sub, reconstruction='axi', session=ses, run=2)[0]
-                my_files['axi'] = [axi1, axi2]
-
-            elif len(files)==1:
-                my_files['axi'] = layout.get(scope='raw', extension='.nii.gz', subject=sub, reconstruction='axi', session=ses)
-            
-            else:
-                warnings.warn(f'Expected to find 1 or 2 axial scans. Found {len(files)} axial scans')
-
+        if not any(my_files.values()):
+            logger.error("No files found in the layout.")
+            raise ValueError("No files found in the layout")
         else:
-            if len(files) == 1:
-                my_files[ax] = files
-            elif len(files) > 1:
-                my_files[ax] = [files[0]]
-            else:
-                warnings.warn(f"Found no {ax} scans")
-    
+            for ax in my_files.keys():
+                files = layout.get(scope='raw', extension='.nii.gz', subject=sub, reconstruction=ax, session=ses)
+                
+                if ax == 'axi':
+
+                    if len(files)==2:
+                        axi1 = layout.get(scope='raw', extension='.nii.gz', subject=sub, reconstruction='axi', session=ses, run=1)[0]
+                        axi2 = layout.get(scope='raw', extension='.nii.gz', subject=sub, reconstruction='axi', session=ses, run=2)[0]
+                        my_files['axi'] = [axi1, axi2]
+
+                    elif len(files)==1:
+                        my_files['axi'] = layout.get(scope='raw', extension='.nii.gz', subject=sub, reconstruction='axi', session=ses)
+                    
+                    else:
+                        warnings.warn(f'Expected to find 1 or 2 axial scans. Found {len(files)} axial scans')
+                        logging.info(f'Expected to find 1 or 2 axial scans. Found {len(files)} axial scans')
+                else:
+                    if len(files) == 1:
+                        my_files[ax] = files
+                    elif len(files) > 1:
+                        my_files[ax] = [files[0]]
+                    else:
+                        warnings.warn(f"Found no {ax} scans")
+    except Exception as e:
+        logger.exception(f"Exception encountered in parse_input_files: {e}")
+        raise
+
     if show_summary:
         print(f"--- SUB: {sub}, SES: {ses} ---")
         print(f"Axial: {len(my_files['axi'])} scans")
@@ -301,7 +338,7 @@ def check_age(ses_id):
     fw = flywheel.Client(api_key=api_key)
 
     print(f"Checking age in session demographic sync...")
-
+    age_in_months = 0
     if 'age_at_scan_months' in ses.info and ses.info['age_at_scan_months'] not in (0, None): 
         age_in_months = ses.info['age_at_scan_months']
         print(f"Age in months in session demographic sync: {age_in_months}")
