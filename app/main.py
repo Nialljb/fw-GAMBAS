@@ -10,6 +10,7 @@ from torch.autograd import Variable
 from tqdm import tqdm
 import datetime
 import subprocess
+import logging
 
 def Registration(image, template, sub, ses):
     """
@@ -23,10 +24,12 @@ def Registration(image, template, sub, ses):
     Returns:
         None
     """
+    logger = logging.getLogger(__name__)
+    logger.info("Starting ANTs registration")
 
     work = f"/flywheel/v0/work/rawdata/sub-{sub}/ses-{ses}/anat/"
     os.makedirs(work, exist_ok=True)  # Creates directory if it doesn't exist
-    output_prefix = os.path.join(work, "ants_rr_")  # Ensures proper path joining
+    output_prefix = os.path.join(work, f"AR_{ses}")  # Ensures proper path joining
 
     print(f"Registering {image} to {template}...")
     print(f"Output will be saved to {output_prefix}")
@@ -42,16 +45,26 @@ def Registration(image, template, sub, ses):
 
     try:
         result = subprocess.run(command, check=True, stdout=subprocess.PIPE, stderr=subprocess.PIPE, text=True)
-        print("Registration output:", result.stdout)
-        print("Registration errors:", result.stderr)
+        # print("Registration output:", result.stdout)
+        # print("Registration errors:", result.stderr)
+        logger.debug("ANTS stdout: " + result.stdout)
+        logger.debug("ANTS stderr: " + result.stderr)
     except subprocess.CalledProcessError as e:
-        print("ANTS Registration failed!")
-        print("Error message:", e.stderr)
+        # print("ANTS Registration failed!")
+        # print("Error message:", e.stderr)
+        logger.error("ANTS registration failed.")
+        logger.error("Return code: " + str(e.returncode))
+        logger.error("Error output: " + e.stderr)
         raise
 
     output_image = output_prefix + "Warped.nii.gz"
-
-    return output_image
+    # Check if the file exists on disk
+    if not os.path.exists(output_image):
+        # File wasn't created; return None
+        return None
+    else:
+        # File exists; return its path
+        return output_image
 
 def from_numpy_to_itk(image_np, image_itk):
     image_np = np.transpose(image_np, (2, 1, 0))

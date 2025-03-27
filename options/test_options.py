@@ -41,12 +41,13 @@ def get_gambas_basename(in_dir, which_model):
 
 
 class TestOptions(BaseOptions):
-    def __init__(self, which_model, config, sub, ses):
+    def __init__(self, which_model, config, sub, ses, image):
         super().__init__()  # Initialize parent class
         self.which_model = which_model  # Store which_model as an instance variable
         self.config = config
         self.sub = sub
         self.ses = ses
+        self.image = image
 
     def initialize(self, parser):
         # Initialize parser from BaseOptions
@@ -73,12 +74,12 @@ class TestOptions(BaseOptions):
         parser.add_argument("--input_dir", type=str, default=in_dir, help="Path to input directory")
         parser.add_argument("--output_dir", type=str, default=output_path, help="Path to output directory")
 
-        # Find the first available NIfTI file in input directory
-        input_files = list(Path(parser.get_default("input_dir")).glob("*.nii.gz"))
-        if not input_files:
-            raise FileNotFoundError("No NIfTI image found in the input directory.")
-
-        parser.add_argument("--image", type=str, default=str(input_files[0]), help="Path to input NIfTI image")
+        # # Find the first available NIfTI file in input directory
+        # input_files = list(Path(parser.get_default("input_dir")).glob("*.nii.gz"))
+        # if not input_files:
+        #     raise FileNotFoundError("No NIfTI image found in the input directory.")
+        # parser.add_argument("--image", type=str, default=str(input_files[0]), help="Path to input NIfTI image")
+        parser.add_argument("--image", type=str, default=self.image, help="Path to input NIfTI image")
         parser.add_argument("--reference", type=str, default="/flywheel/v0/app/TemplateKhula.nii", help="Path to reference NIfTI image")
         parser.add_argument("--result_sr", type=str, default=str(Path(parser.get_default("output_dir")) / output_label), help="Path to save the result NIfTI file")
         

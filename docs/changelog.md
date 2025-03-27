@@ -1,5 +1,9 @@
 # Changelog
 
+0.3.1 (2025-03-24) NJB
+- Added in catch for age if outside of trained model range
+- Added in loging for each session to return
+
 0.3.0 (2025-03-21) NJB
 Working version of the gear that can run at project level.
 - catches input labels with dashes and underscores that are not in the BIDS standard
