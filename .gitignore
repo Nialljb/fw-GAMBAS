@@ -16,6 +16,6 @@ local-debug.sh
 # large project files
 app/cpu/latest_net_G.pth
 app/gpu/latest_net_G.pth
+app/gpu/previous_net_G.pth
 app/TemplateKhula.nii
 venv/
-gambas-0.2.3-67d3008635967dbbf14466cf

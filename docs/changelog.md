@@ -1,5 +1,8 @@
 # Changelog
 
+0.4.0 (2025-04-04) NJB
+- Updated to use the latest version of the model (n=215)
+
 0.3.1 (2025-03-24) NJB
 - Added in catch for age if outside of trained model range
 - Added in loging for each session to return
