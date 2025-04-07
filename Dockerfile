@@ -8,14 +8,15 @@ WORKDIR $FLYWHEEL
 RUN mkdir -p $FLYWHEEL/input
 
 # Ensure pip is upgraded and install `packaging`
-RUN pip install --no-cache-dir --upgrade pip setuptools wheel packaging
+RUN pip install --no-cache-dir --upgrade pip setuptools wheel packaging 
 
 # Install PyTorch separately before requirements.txt
 RUN pip install --no-cache-dir torch==2.2.2 torchvision==0.17.2
 
-# Install ANTs
-RUN apt-get update && apt-get install -y curl tar unzip git && \
+# Install ANTs, added cmake
+RUN apt-get update && apt-get install -y curl tar unzip git cmake && \
     curl -fsSL https://github.com/ANTsX/ANTs/releases/download/v2.5.4/ants-2.5.4-almalinux8-X64-gcc.zip -o /tmp/ants.tar.gz && \
+    curl -fLO https://github.com/rordenlab/dcm2niix/releases/latest/download/dcm2niix_lnx.zip && \
     unzip /tmp/ants.tar.gz -d /opt/ && \
     rm /tmp/ants.tar.gz && \
     echo 'export PATH=/opt/ants-2.5.4/bin:$PATH' >> ~/.bashrc
