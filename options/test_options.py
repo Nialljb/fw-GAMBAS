@@ -3,7 +3,7 @@ from pathlib import Path
 from options.base_options import BaseOptions  # BaseOptions is defined elsewhere
 from utils.parser import parse_config
 
-def get_gambas_basename(in_dir, which_model):
+def get_gambas_basename(base, which_model):
     """
     Given an input directory and model name, returns a modified NIfTI basename
     with '_gambas' or '_ResCNN' inserted before the extension.
@@ -16,18 +16,6 @@ def get_gambas_basename(in_dir, which_model):
         str: Modified NIfTI filename
     """
     
-    print(in_dir)
-
-    # Find .nii or .nii.gz files
-    nii_files = list(in_dir.glob("*.nii.gz"))
-
-    if not nii_files:
-        raise FileNotFoundError("No NIfTI files found in the anat directory.")
-
-    # Use the first file found
-    original_file = nii_files[0]
-    base = original_file.name
-
     suffix = "_gambas.nii.gz" if which_model == 'GAMBAS' else "_ResCNN.nii.gz"
 
     # Append '_gambas' before extension
@@ -68,8 +56,8 @@ class TestOptions(BaseOptions):
         output_path.mkdir(parents=True, exist_ok=True)
 
         m = self.which_model
-        output_label = get_gambas_basename(in_dir, m)
-        print(f"Self Image: {self.image}")
+        output_label = get_gambas_basename(self.image, m)
+        # print(f"Self Image: {self.image}")
         
         # Define default input and output directories
         parser.add_argument("--input_dir", type=str, default=in_dir, help="Path to input directory")

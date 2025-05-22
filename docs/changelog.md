@@ -1,5 +1,8 @@
 # Changelog
 
+0.4.1 (2025-05-22) NJB
+- updated file output name to handle multiple runs
+
 0.4.0 (2025-04-04) NJB
 - Updated to use the latest version of the model (n=215)
 
