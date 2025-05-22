@@ -1,6 +1,6 @@
 {
   "author": "Levente Baljer, Niall Bourke",
-  "cite": "Baljer, L., Briski, U., Leech, R., Bourke, N. J., Donald, K. A., Bradford, L. E., Williams, S. R., Parkar, S., Kaleem, S., Osmani, S., Deoni, S. C., Williams, S. C., Moran, R. J., Robinson, E. C., & Váša, F. (2025, January 18). GAMBAS: Generalised-Hilbert Mamba for Super-resolution of Paediatric Ultra-Low-Field MRI. Medical Imaging with Deep Learning. https://openreview.net/forum?id=ikfiyBBHAz",
+  "cite": "Baljer, L., Briski, U., Leech, R., Bourke, N. J., Donald, K. A., Bradford, L. E., Williams, S. R., Parkar, S., Kaleem, S., Osmani, S., Deoni, S. C., Williams, S. C., Moran, R. J., Robinson, E. C., & V\u00e1\u0161a, F. (2025, January 18). GAMBAS: Generalised-Hilbert Mamba for Super-resolution of Paediatric Ultra-Low-Field MRI. Medical Imaging with Deep Learning. https://openreview.net/forum?id=ikfiyBBHAz",
   "command": "python /flywheel/v0/run.py",
   "config": {
     "force_run": {

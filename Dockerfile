@@ -20,6 +20,8 @@ RUN apt-get update && apt-get install -y curl tar unzip git && \
     rm /tmp/ants.tar.gz && \
     echo 'export PATH=/opt/ants-2.5.4/bin:$PATH' >> ~/.bashrc
 
+RUN apt-get update && apt-get install -y dcm2niix
+
 # Copy and install dependencies
 COPY requirements.txt .
 RUN pip install --no-cache-dir -r requirements.txt

@@ -69,7 +69,8 @@ class TestOptions(BaseOptions):
 
         m = self.which_model
         output_label = get_gambas_basename(in_dir, m)
-
+        print(f"Self Image: {self.image}")
+        
         # Define default input and output directories
         parser.add_argument("--input_dir", type=str, default=in_dir, help="Path to input directory")
         parser.add_argument("--output_dir", type=str, default=output_path, help="Path to output directory")
