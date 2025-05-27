@@ -1,5 +1,9 @@
 # Changelog
 
+0.4.2 (2025-05-27) NJB LB
+- Update to catch name (where checkpoint is stored)
+
+
 0.4.1 (2025-05-22) NJB
 - updated file output name to handle multiple runs
 
