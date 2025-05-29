@@ -1,4 +1,6 @@
 # Changelog
+0.4.3 (2025-05-29) NJB
+- Replaced gpu checkpoint in case it was not updated correctly in the last version
 
 0.4.2 (2025-05-27) NJB LB
 - Update to catch name (where checkpoint is stored)
