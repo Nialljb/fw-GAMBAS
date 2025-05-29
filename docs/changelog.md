@@ -1,4 +1,9 @@
 # Changelog
+
+0.4.5 
+DEBUGGING: Ammended test options to run cpu model on GPU
+Added the registration step to output
+
 0.4.3 (2025-05-29) NJB
 - Replaced gpu checkpoint in case it was not updated correctly in the last version
 

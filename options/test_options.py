@@ -45,13 +45,11 @@ class TestOptions(BaseOptions):
         gpu_index = '0' if self.which_model == 'GAMBAS' else '-1'
         gpu_setting = 'gpu' if self.which_model == 'GAMBAS' else 'cpu'
         netG = 'i2i_mamba' if self.which_model == 'GAMBAS' else 'res_cnn'
-        folder_name = 'gpu' if self.which_model == 'GAMBAS' else 'cpu'
 
         # Update gpu_ids argument in base options
         parser.set_defaults(gpu_ids=gpu_index)
         parser.set_defaults(name=gpu_setting)
         parser.set_defaults(netG=netG)
-        parser.set_defaults(name=folder_name)
 
         in_dir = Path(f"/flywheel/v0/work/rawdata/sub-{self.sub}/ses-{self.ses}/anat")
         output_path = Path(f"/flywheel/v0/work/derivatives/sub-{self.sub}/ses-{self.ses}/anat")
