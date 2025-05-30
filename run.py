@@ -166,7 +166,7 @@ def fw_process_subject(layout, sub, ses, which_model, config):
                 logging.info(f"Registering images for {sub}-{ses}")
                 input_image = Registration(opt.image, opt.reference, sub, ses)
                 
-                shutil.copy(input_image, "/flywheel/v0/ouput/")
+                # shutil.copy(input_image, "/flywheel/v0/ouput/")
 
                 if input_image is None:
                     logging.warning(f"Registration failed for subject {sub} session {ses}. Skipping this iteration.")
