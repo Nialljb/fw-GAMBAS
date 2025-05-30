@@ -46,6 +46,9 @@ class TestOptions(BaseOptions):
         gpu_setting = 'gpu' if self.which_model == 'GAMBAS' else 'cpu'
         netG = 'i2i_mamba' if self.which_model == 'GAMBAS' else 'res_cnn'
 
+        # DEBUGGING: run cnn on GPU
+        # netG = 'res_cnn' if self.which_model == 'GAMBAS' else 'res_cnn'
+
         # Update gpu_ids argument in base options
         parser.set_defaults(gpu_ids=gpu_index)
         parser.set_defaults(name=gpu_setting)
@@ -57,17 +60,10 @@ class TestOptions(BaseOptions):
 
         m = self.which_model
         output_label = get_gambas_basename(self.image, m)
-        # print(f"Self Image: {self.image}")
         
         # Define default input and output directories
         parser.add_argument("--input_dir", type=str, default=in_dir, help="Path to input directory")
         parser.add_argument("--output_dir", type=str, default=output_path, help="Path to output directory")
-
-        # # Find the first available NIfTI file in input directory
-        # input_files = list(Path(parser.get_default("input_dir")).glob("*.nii.gz"))
-        # if not input_files:
-        #     raise FileNotFoundError("No NIfTI image found in the input directory.")
-        # parser.add_argument("--image", type=str, default=str(input_files[0]), help="Path to input NIfTI image")
         parser.add_argument("--image", type=str, default=self.image, help="Path to input NIfTI image")
         parser.add_argument("--reference", type=str, default="/flywheel/v0/app/TemplateKhula.nii", help="Path to reference NIfTI image")
         parser.add_argument("--result_sr", type=str, default=str(Path(parser.get_default("output_dir")) / output_label), help="Path to save the result NIfTI file")

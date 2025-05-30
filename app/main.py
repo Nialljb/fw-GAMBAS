@@ -11,7 +11,6 @@ from tqdm import tqdm
 import datetime
 import subprocess
 import logging
-import shutil
 
 def Registration(image, template, sub, ses):
     """
@@ -62,7 +61,6 @@ def Registration(image, template, sub, ses):
     # Check if the file exists on disk
     if not os.path.exists(output_image):
         # File wasn't created; return None
-        shutil.copy(output_image, "/flywheel/v0/ouput/")
         return None
     else:
         # File exists; return its path

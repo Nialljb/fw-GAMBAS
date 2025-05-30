@@ -6,6 +6,8 @@ import sys
 import bids
 from datetime import datetime
 from io import StringIO
+import shutil
+
 
 # import flywheel functions
 from flywheel_gear_toolkit import GearToolkitContext
@@ -105,9 +107,6 @@ def main(context: GearToolkitContext) -> None:
                     analysis.upload_output(file)
 
 
-            # if not os.path.exists(config['output_dir']):
-            #     os.makedirs(config['output_dir'])
-
 # The main function for processing a subject
 def fw_process_subject(layout, sub, ses, which_model, config):
     """
@@ -166,6 +165,8 @@ def fw_process_subject(layout, sub, ses, which_model, config):
                 print('Registering images')
                 logging.info(f"Registering images for {sub}-{ses}")
                 input_image = Registration(opt.image, opt.reference, sub, ses)
+                
+                shutil.copy(input_image, "/flywheel/v0/ouput/")
 
                 if input_image is None:
                     logging.warning(f"Registration failed for subject {sub} session {ses}. Skipping this iteration.")
@@ -194,31 +195,6 @@ def fw_process_subject(layout, sub, ses, which_model, config):
                 logging.error(f"Error processing file {f} for subject {sub} session {ses}: {e}")
                 continue  # Continue with the next file
 
-        # for f in raw_fnames:
-        #     gb._logprint(f"Input file: {f}")
-
-        #     print('Setting up options for model')
-        #     logging.info(f"Setting up options for model {which_model}")
-        #     # NOTE: Need to pass input, output dirs here!!
-        #     opt = TestOptions(which_model=which_model, config=config, sub=sub, ses=ses, image = f).parse()
-            
-        #     print('Registering images')
-        #     logging.info(f"Registering images for {sub}-{ses}")
-        #     input_image = Registration(opt.image, opt.reference, sub, ses)
-
-        #     if input_image is None:
-        #         logging.warning(f"Registration failed for subject {sub} session {ses}. Skipping this iteration.")
-        #         continue  # Skip to the next iteration of the loop
-
-        #     print('Creating model')
-        #     logging.info(f"Creating model for {sub}-{ses}")
-        #     model = create_model(opt)
-        #     model.setup(opt)
-
-        #     print('Running inference')
-        #     logging.info(f"Running inference for {sub}-{ses}")
-        #     fname = inference(model, input_image, opt.result_sr, opt.resample, opt.new_resolution, opt.patch_size[0],
-        #             opt.patch_size[1], opt.patch_size[2], opt.stride_inplane, opt.stride_layer, 1)
             
             if fname:
                 deriv_fnames.append(fname)

@@ -50,7 +50,7 @@
     },
     "gear-builder": {
       "category": "analysis",
-      "image": "flywheel/gambas:0.4.5"
+      "image": "flywheel/gambas:0.4.7"
     },
     "kcl-app-binary": "app/main.sh",
     "kcl-app-modalities": [
@@ -131,5 +131,5 @@
   "name": "gambas",
   "source": "https://github.com/UNITY-Physics/fw-GAMBAS",
   "url": "https://openreview.net/forum?id=ikfiyBBHAz",
-  "version": "0.4.5"
+  "version": "0.4.7"
 }
