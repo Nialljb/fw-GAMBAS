@@ -43,10 +43,10 @@ class TestOptions(BaseOptions):
         
         # Determine GPU setting based on model
         gpu_index = '0' if self.which_model == 'GAMBAS' else '-1'
-        # gpu_setting = 'gpu' if self.which_model == 'GAMBAS' else 'cpu'
-        # netG = 'i2i_mamba' if self.which_model == 'GAMBAS' else 'res_cnn'
-        netG = 'res_cnn'  # Default to res_cnn for all models
-        gpu_setting = 'cpu'  # Default to cpu for all models
+        gpu_setting = 'gpu' if self.which_model == 'GAMBAS' else 'cpu'
+        netG = 'i2i_mamba' if self.which_model == 'GAMBAS' else 'res_cnn'
+        # netG = 'res_cnn'  # Default to res_cnn for all models
+        # gpu_setting = 'cpu'  # Default to cpu for all models
 
         # Update gpu_ids argument in base options
         parser.set_defaults(gpu_ids=gpu_index)
