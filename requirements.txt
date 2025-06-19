@@ -16,4 +16,3 @@ SimpleITK
 mamba-ssm
 bids
 dcm2bids
-dcm2niix

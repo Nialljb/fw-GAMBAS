@@ -729,8 +729,8 @@ class I2IMamba(nn.Module):
 
         # Episodic bottleneck
         # cmMamba block with residual CNN block
-        # self.bottleneck_1 = cmMambaWithCNN(self.config, input_dim)
-        self.bottleneck_1 = BottleneckCNN(self.config)
+        self.bottleneck_1 = cmMambaWithCNN(self.config, input_dim)
+        # self.bottleneck_1 = BottleneckCNN(self.config)
         
         self.bottleneck_2 = BottleneckCNN(self.config)
         # self.bottleneck_2 = cmMambaWithCNN(self.config, input_dim)
@@ -751,8 +751,8 @@ class I2IMamba(nn.Module):
         # self.bottleneck_8 = cmMambaWithCNN(self.config, input_dim)
 
         # cmMamba block with residual CNN block
-        # self.bottleneck_9 = cmMambaWithCNN(self.config, input_dim)
-        self.bottleneck_9 = BottleneckCNN(self.config)
+        self.bottleneck_9 = cmMambaWithCNN(self.config, input_dim)
+        # self.bottleneck_9 = BottleneckCNN(self.config)
 
         ############################################################################################
         # Layer13-Decoder1 - currently removed the additional in_channels (removed * 2 for first argument), taking away skip connection to here

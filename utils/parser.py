@@ -202,18 +202,20 @@ def download_session(ses_container, sub_dir, force_run, dry_run=False) -> Tuple[
     ses_dir = os.path.join(sub_dir, ses_label)
     ses_id = ses_container.id
 
-    if force_run:
-        print(f"[FORCE RUN] Skipping age check and saving data into: {ses_dir}")
-        proceed = True
-        age = "unknown"  # Optional, if you still want to log age
-    else:
-        age_check, age = check_age(ses_id)
-        if not age_check:
-            print(f"Age {age} is not within the model range 3 months - 3 years")
-            proceed = False
-        else:
-            print(f"Saving data into: {ses_dir}")
-            proceed = True
+    proceed = True
+    
+    # if force_run:
+    #     print(f"[FORCE RUN] Skipping age check and saving data into: {ses_dir}")
+    #     proceed = True
+    #     age = "unknown"  # Optional, if you still want to log age
+    # else:
+    #     age_check, age = check_age(ses_id)
+    #     if not age_check:
+    #         print(f"WARNING: Age {age} is not within the model range 3 months - 3 years")
+    #         proceed = True
+    #     else:
+    #         print(f"Saving data into: {ses_dir}")
+    #         proceed = True
 
     if proceed:
         for acq in ses_container.acquisitions.iter():

@@ -1,5 +1,22 @@
 # Changelog
 
+0.4.5 
+DEBUGGING: Ammended test options to run cpu model on GPU
+Added the registration step to output
+
+0.4.3 (2025-05-29) NJB
+- Replaced gpu checkpoint in case it was not updated correctly in the last version
+
+0.4.2 (2025-05-27) NJB LB
+- Update to catch name (where checkpoint is stored)
+
+
+0.4.1 (2025-05-22) NJB
+- updated file output name to handle multiple runs
+
+0.4.0 (2025-04-04) NJB
+- Updated to use the latest version of the model (n=215)
+
 0.3.1 (2025-03-24) NJB
 - Added in catch for age if outside of trained model range
 - Added in loging for each session to return
